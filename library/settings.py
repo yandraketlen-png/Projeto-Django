@@ -55,7 +55,7 @@ ROOT_URLCONF = 'library.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # pasta de templates do projeto (ao lado do manage.py)
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -119,7 +119,10 @@ STATIC_URL = 'static/'
 # Arquivos enviados pelos usuários (ex.: capas dos livros)
 MEDIA_URL = 'media/'  # endereço usado no navegador: /media/book_covers/capa.jpg
 MEDIA_ROOT = BASE_DIR / 'media'  # pasta do computador onde os arquivos ficam guardados
-
+# Autenticação (os valores são NOMES de rotas, não endereços)
+LOGIN_URL = 'login'  # para onde vai quem tenta abrir uma página protegida sem estar logado
+LOGIN_REDIRECT_URL = 'catalog:book_list'  # para onde vai depois de entrar
+LOGOUT_REDIRECT_URL = 'login'  # para onde vai depois de sair
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
