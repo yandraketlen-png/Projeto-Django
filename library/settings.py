@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-vr03&8_u076x1n_l%n_-2v6h1d^sjh^021fa7grb5tuq2zlihg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "testserver"]
 
 
 # Application definition
@@ -117,7 +117,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 # Arquivos enviados pelos usuários (ex.: capas dos livros)
-MEDIA_URL = 'media/'  # endereço usado no navegador: /media/book_covers/capa.jpg
+MEDIA_URL = '/media/'  # endereço usado no navegador: /media/book_covers/capa.jpg
 MEDIA_ROOT = BASE_DIR / 'media'  # pasta do computador onde os arquivos ficam guardados
 # Autenticação (os valores são NOMES de rotas, não endereços)
 LOGIN_URL = 'login'  # para onde vai quem tenta abrir uma página protegida sem estar logado

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Busca avançada · Biblioteca{% endblock %}
+{% block content %}
+  <h1>Busca avançada</h1>
+
+  <form class="card" method="get" action="{% url 'catalog:book_list' %}">
+    <div class="form-grid">
+      <div>
+        <label for="q">Texto geral</label>
+        <input id="q" type="text" name="q" value="{{ request.GET.q }}">
+      </div>
+      <div>
+        <label for="title">Título</label>
+        <input id="title" type="text" name="title" value="{{ request.GET.title }}">
+      </div>
+      <div>
+        <label for="author">Autor(a)</label>
+        <input id="author" type="text" name="author" value="{{ request.GET.author }}">
+      </div>
+      <div>
+        <label for="publisher">Editora</label>
+        <input id="publisher" type="text" name="publisher" value="{{ request.GET.publisher }}">
+      </div>
+      <div>
+        <label for="categoria">Categoria</label>
+        <select id="categoria" name="categoria">
+          <option value="">Todas</option>
+          {% for category in categories %}
+            <option value="{{ category.id }}" {% if request.GET.categoria == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="idioma">Idioma</label>
+        <select id="idioma" name="idioma">
+          <option value="">Qualquer</option>
+          {% for language in languages %}
+            <option value="{{ language }}" {% if request.GET.idioma == language %}selected{% endif %}>{{ language }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="ano_min">Ano mínimo</label>
+        <input id="ano_min" type="number" name="ano_min" value="{{ request.GET.ano_min }}">
+      </div>
+      <div>
+        <label for="ano_max">Ano máximo</label>
+        <input id="ano_max" type="number" name="ano_max" value="{{ request.GET.ano_max }}">
+      </div>
+    </div>
+
+    <div class="actions">
+      <label>
+        <input type="checkbox" name="disponivel" value="1" {% if request.GET.disponivel == "1" %}checked{% endif %}>
+        Mostrar somente disponíveis
+      </label>
+      <button class="btn btn-primary" type="submit">Buscar</button>
+      <a class="btn" href="{% url 'catalog:book_list' %}">Limpar</a>
+    </div>
+  </form>
+{% endblock %}

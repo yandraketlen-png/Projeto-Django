@@ -3,52 +3,241 @@
 {% block content %}
   <h1>Acervo</h1>
 
-  {# books foi enviado pela view no dicionário de contexto #}
-  {% if books %}
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Capa</th>
-            <th>Título</th>
-            <th>Autor(a)</th>
-            <th>Disponíveis</th>
-            <th>Ação</th>
-          </tr>
-        </thead>
-        <tbody>
-          {# Uma linha da tabela para cada livro #}
-          {% for book in books %}
-            <tr>
-              <td>
-                {# book.image.url monta o endereço /media/book_covers/... #}
-                {% if book.image %}
-                  <img class="cover" src="{{ book.image.url }}" alt="Capa de {{ book.title }}">
-                {% else %}
-                  <div class="cover">sem capa</div>
-                {% endif %}
-              </td>
-              <td>{{ book.title }}</td>
-              <td>{{ book.author }}</td>
-              {# copies_available é a @property do model Book #}
-              <td>{{ book.copies_available }} de {{ book.copies_total }}</td>
-              <td>
-                {% if book.copies_available > 0 %}
-                  {# Emprestar altera dados: formulário POST com o token de segurança CSRF #}
-                  <form class="inline" method="post" action="{% url 'catalog:borrow_book' book.id %}">
-                    {% csrf_token %}
-                    <button class="btn btn-primary" type="submit">Emprestar</button>
-                  </form>
-                {% else %}
-                  <button class="btn" disabled>Indisponível</button>
-                {% endif %}
-              </td>
-            </tr>
+  <form class="card" method="get">
+    <div class="form-grid">
+      <div>
+        <label for="q">Buscar por título, autor ou ISBN</label>
+        <input id="q" type="text" name="q" value="{{ params.q }}" placeholder="Ex.: Machado" list="suggestions" autocomplete="off">
+        <datalist id="suggestions"></datalist>
+      </div>
+      <div>
+        <label for="categoria">Categoria</label>
+        <select id="categoria" name="categoria">
+          <option value="">Todas</option>
+          {% for category in categories %}
+            <option value="{{ category.id }}" {% if params.categoria == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
           {% endfor %}
-        </tbody>
-      </table>
+        </select>
+      </div>
+      <div>
+        <label for="ordenar">Ordenar por</label>
+        <select id="ordenar" name="ordenar">
+          {% for value, label in order_options %}
+            <option value="{{ value }}" {% if params.ordenar == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
     </div>
+    <div class="actions">
+      <label>
+        <input type="checkbox" name="disponivel" value="1" {% if params.disponivel == "1" %}checked{% endif %}>
+        Somente com cópias disponíveis
+      </label>
+      <button class="btn btn-primary" type="submit">Filtrar</button>
+      <a class="btn" href="{% url 'catalog:book_list' %}">Limpar</a>
+      <a href="{% url 'catalog:advanced_search' %}">Busca avançada »</a>
+    </div>
+  </form>
+
+  <div class="actions">
+    <span class="muted">{{ page_obj.paginator.count }} livro(s) encontrado(s).</span>
+    <span class="spacer"></span>
+    <a class="btn" href="{% url 'catalog:export_books' 'csv' %}?{{ request.GET.urlencode }}">Baixar CSV</a>
+    <a class="btn" href="{% url 'catalog:export_books' 'xlsx' %}?{{ request.GET.urlencode }}">Baixar Excel</a>
+  </div>
+
+  {% if page_obj %}
+    <div class="book-grid">
+      {% for book in page_obj %}
+        <article class="book-card">
+          <button
+            class="book-cover-button"
+            type="button"
+            data-title="{{ book.title|escapejs }}"
+            data-author="{{ book.author|escapejs }}"
+            data-category="{{ book.category.name|default:'Geral'|escapejs }}"
+            data-language="{{ book.language|default:'—'|escapejs }}"
+            data-year="{{ book.edition_year|default:'—'|escapejs }}"
+            data-status="{{ book.available }} de {{ book.copies_total }} disponível(is)"
+            data-image="{% if book.image %}{{ book.image.url }}{% endif %}"
+            data-pdf="{% if book.pdf %}{% url 'catalog:book_pdf' book.id %}{% endif %}"
+            data-synopsis="{{ book.synopsis|default:'Sem sinopse disponível no momento.'|escapejs }}"
+          >
+            {% if book.image %}
+              <div class="book-cover-wrap">
+                <img class="cover" src="{{ book.image.url }}" alt="Capa de {{ book.title }}">
+              </div>
+            {% else %}
+              <div class="book-cover-wrap">
+                <div class="cover-placeholder">Sem capa</div>
+              </div>
+            {% endif %}
+          </button>
+
+          <div class="book-info">
+            <span class="book-tag">{{ book.category.name|default:"Geral" }}</span>
+            <h2 class="book-title">{{ book.title }}</h2>
+            <p class="book-author">{{ book.author }}</p>
+            {% if book.available > 0 %}
+              <span class="book-stock">{{ book.available }} disponíveis</span>
+            {% else %}
+              <span class="book-status">Indisponível</span>
+            {% endif %}
+
+            <div class="book-actions">
+              {% if book.available > 0 %}
+                <form class="inline" method="post" action="{% url 'catalog:borrow_book' book.id %}">
+                  {% csrf_token %}
+                  <button class="btn btn-primary" type="submit">Emprestar</button>
+                </form>
+              {% else %}
+                <button class="btn" disabled>Indisponível</button>
+              {% endif %}
+              {% if user.is_staff %}
+                <a class="btn" href="{% url 'catalog:book_borrowers' book.id %}">Quem tem?</a>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+      <div class="actions">
+        {% if page_obj.has_previous %}
+          <a class="btn" href="{% querystring page=page_obj.previous_page_number %}">« Anterior</a>
+        {% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a class="btn" href="{% querystring page=page_obj.next_page_number %}">Próxima »</a>
+        {% endif %}
+      </div>
+    {% endif %}
   {% else %}
-    <p class="muted">Nenhum livro cadastrado ainda. Cadastre pelo Admin.</p>
+    <p class="muted">Nenhum livro encontrado.</p>
   {% endif %}
+
+  <div id="bookPreviewModal" class="preview-modal" hidden>
+    <div class="preview-backdrop" data-close="true"></div>
+    <div class="preview-panel" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <button class="preview-close" type="button" aria-label="Fechar prévia">×</button>
+      <div class="preview-book">
+        <div class="preview-cover">
+          <img id="previewImage" src="" alt="Prévia da capa">
+        </div>
+        <div class="preview-content">
+          <span id="previewCategory" class="book-tag">Geral</span>
+          <h2 id="previewTitle" class="book-title">Título</h2>
+          <p id="previewAuthor" class="book-author">Autor</p>
+
+          <div class="preview-meta">
+            <div class="meta-item meta-language">
+              <span class="meta-label">Idioma</span>
+              <span id="previewLanguage" class="meta-value">—</span>
+            </div>
+            <div class="meta-item meta-year">
+              <span class="meta-label">Ano</span>
+              <span id="previewYear" class="meta-value">—</span>
+            </div>
+          </div>
+
+          <div class="meta-item meta-status">
+            <span class="meta-label">Disponibilidade</span>
+            <span id="previewStatus" class="meta-value">—</span>
+          </div>
+
+          <div class="meta-item meta-synopsis">
+            <span class="meta-label">Sinopse</span>
+            <span id="previewSynopsis" class="meta-value" style="display:block; font-weight:700; line-height:1.7; margin-top:8px;">—</span>
+          </div>
+
+          <a id="previewPdfLink" class="btn btn-primary" href="#" target="_blank" rel="noopener" style="display:none; width: fit-content;">Ler em PDF</a>
+          <p class="muted">Uma prévia da obra para ajudar você a decidir se quer conhecer mais sobre ela antes de emprestar.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const input = document.getElementById("q");
+      const list = document.getElementById("suggestions");
+      let timer;
+
+      if (input) {
+        input.addEventListener("input", function () {
+          clearTimeout(timer);
+          const text = input.value.trim();
+          if (text.length < 2) { list.innerHTML = ""; return; }
+
+          timer = setTimeout(async function () {
+            const url = "{% url 'catalog:book_suggestions' %}?q=" + encodeURIComponent(text);
+            const response = await fetch(url);
+            const data = await response.json();
+            list.innerHTML = "";
+            for (const suggestion of data.suggestions) {
+              const option = document.createElement("option");
+              option.value = suggestion;
+              list.appendChild(option);
+            }
+          }, 300);
+        });
+      }
+
+      const modal = document.getElementById("bookPreviewModal");
+      const previewImage = document.getElementById("previewImage");
+      const previewTitle = document.getElementById("previewTitle");
+      const previewAuthor = document.getElementById("previewAuthor");
+      const previewCategory = document.getElementById("previewCategory");
+      const previewLanguage = document.getElementById("previewLanguage");
+      const previewYear = document.getElementById("previewYear");
+      const previewStatus = document.getElementById("previewStatus");
+      const previewSynopsis = document.getElementById("previewSynopsis");
+      const previewPdfLink = document.getElementById("previewPdfLink");
+      const closeButton = document.querySelector(".preview-close");
+      const backdrop = document.querySelector(".preview-backdrop");
+
+      function closePreview() {
+        modal.hidden = true;
+        previewPdfLink.href = "#";
+        previewPdfLink.style.display = "none";
+        document.body.style.overflow = "";
+      }
+
+      document.querySelectorAll(".book-cover-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          const image = button.dataset.image || "";
+          const pdfUrl = button.dataset.pdf || "";
+          previewImage.src = image;
+          previewImage.alt = "Capa de " + button.dataset.title;
+          previewTitle.textContent = button.dataset.title;
+          previewAuthor.textContent = button.dataset.author;
+          previewCategory.textContent = button.dataset.category || "Geral";
+          previewLanguage.textContent = button.dataset.language || "—";
+          previewYear.textContent = button.dataset.year || "—";
+          previewStatus.textContent = button.dataset.status || "—";
+          previewSynopsis.textContent = button.dataset.synopsis || "Sem sinopse disponível no momento.";
+
+          if (pdfUrl) {
+            previewPdfLink.href = pdfUrl;
+            previewPdfLink.style.display = "inline-block";
+          } else {
+            previewPdfLink.href = "#";
+            previewPdfLink.style.display = "none";
+          }
+
+          modal.hidden = false;
+          document.body.style.overflow = "hidden";
+        });
+      });
+
+      closeButton.addEventListener("click", closePreview);
+      backdrop.addEventListener("click", closePreview);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !modal.hidden) {
+          closePreview();
+        }
+      });
+    })();
+  </script>
 {% endblock %}

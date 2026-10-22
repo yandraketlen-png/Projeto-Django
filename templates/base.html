@@ -6,81 +6,407 @@
   {# Cada página pode trocar o título preenchendo este bloco #}
   <title>{% block title %}Biblioteca{% endblock %}</title>
   <style>
-    /* 1) Cores do tema claro, guardadas em variáveis CSS */
     :root {
-      --bg: #f6f7f9;       /* fundo da página */
-      --card: #ffffff;     /* fundo de cartões, tabelas e campos */
-      --text: #1f2328;     /* texto principal */
-      --muted: #6b7280;    /* texto secundário */
-      --border: #d9dde3;   /* bordas */
-      --primary: #2f5bd3;  /* links e botões principais */
-      --header: #1e293b;   /* barra do menu */
-      --danger: #b42318;   /* erros e atrasos */
-      --success: #067647;  /* confirmações */
-      --warning: #b54708;  /* avisos */
-    }
-    /* 2) Tema escuro: só trocamos o valor das variáveis */
-    .theme-dark {
-      --bg: #0f141a;
-      --card: #18202a;
-      --text: #e6e9ee;
-      --muted: #9aa4b2;
-      --border: #2c3643;
-      --primary: #7aa2ff;
-      --header: #0b1016;
-      --danger: #ff7a70;
-      --success: #4ad295;
-      --warning: #ffb86b;
+      --bg: #f3f6fb;
+      --card: #ffffff;
+      --text: #1d2432;
+      --muted: #5f6b7a;
+      --border: #dfe7f3;
+      --primary: #2a63d9;
+      --primary-dark: #1947b3;
+      --header: #172033;
+      --danger: #b42318;
+      --success: #067647;
+      --warning: #b54708;
+      --shadow: 0 10px 28px rgba(17, 24, 39, 0.08);
     }
 
-    /* 3) Estilos gerais: todos usam as variáveis acima */
+    .theme-dark {
+      --bg: #101820;
+      --card: #182333;
+      --text: #e8edf5;
+      --muted: #a7b3c5;
+      --border: #2a374f;
+      --primary: #8ab4ff;
+      --primary-dark: #628ff1;
+      --header: #0a111b;
+      --danger: #ff8076;
+      --success: #55d38e;
+      --warning: #ffba5a;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    }
+
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg,
+        #ff6b6b 0%,
+        #feca57 16%,
+        #48dbfb 32%,
+        #1dd1a1 48%,
+        #a55eea 64%,
+        #ff9ff3 80%,
+        #ff6b6b 100%);
+      color: var(--text);
+      line-height: 1.5;
+    }
     a { color: var(--primary); }
 
-    /* Menu superior */
-    header { background: var(--header); padding: 12px 16px; }
-    nav { max-width: 1000px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
-    nav a { color: #fff; text-decoration: none; }
+    header {
+      background: linear-gradient(135deg, var(--header), #223454);
+      padding: 14px 18px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+    }
+    nav {
+      max-width: 1150px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      align-items: center;
+    }
+    nav a { color: #fff; text-decoration: none; font-weight: 600; }
     nav a:hover { text-decoration: underline; }
-    .spacer { flex: 1; } /* ocupa o espaço livre e empurra o que vem depois para a direita */
-    nav .user { color: #cbd5e1; }
+    .spacer { flex: 1; }
+    nav .user { color: #dfe7f6; font-weight: 600; }
 
-    /* Área de conteúdo */
-    main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+    main {
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
 
-    /* Classes utilitárias usadas nas páginas */
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .card, .book-card, .message {
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
     .muted { color: var(--muted); }
     .danger { color: var(--danger); }
     .success { color: var(--success); }
 
-    /* Botões (servem para <button> e para links <a class="btn">) */
-    .btn { display: inline-block; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
-           background: var(--card); color: var(--text); cursor: pointer; font: inherit; text-decoration: none; }
-    .btn:hover { border-color: var(--primary); }
-    .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn {
+      display: inline-block;
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .btn:hover { border-color: var(--primary); transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-color: transparent;
+      color: #fff;
+    }
     .btn[disabled] { opacity: .5; cursor: not-allowed; }
-    form.inline { display: inline; } /* formulário na mesma linha do texto */
+    form.inline { display: inline; }
 
-    /* Tabelas */
-    table { width: 100%; border-collapse: collapse; background: var(--card); }
-    th, td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
-    .table-wrap { overflow-x: auto; } /* em telas pequenas a tabela rola para o lado */
+    .book-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 22px;
+      margin-top: 22px;
+    }
 
-    /* Miniatura da capa (ou o quadro "sem capa") */
-    .cover { width: 48px; height: 72px; object-fit: cover; border-radius: 4px; background: var(--border);
-             display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--muted); text-align: center; }
+    .book-card {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(17, 24, 39, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
 
-    /* Mensagens do Django: a classe vem de message.tags (success, error, warning, info) */
-    .message { padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; border: 1px solid var(--border); background: var(--card); }
+    .book-cover-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 210px;
+      background: linear-gradient(180deg, rgba(224, 232, 245, 0.7), rgba(255,255,255,0.2));
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      overflow: hidden;
+    }
+
+    .cover {
+      width: 130px;
+      height: 190px;
+      object-fit: cover;
+      border-radius: 16px;
+      box-shadow: 0 18px 22px rgba(15, 23, 42, 0.16);
+      background: var(--border);
+      display: block;
+      transition: transform 0.25s ease;
+    }
+
+    .book-cover-button {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      display: block;
+    }
+    .book-cover-button:hover .cover,
+    .book-cover-button:focus-visible .cover {
+      transform: translateY(-4px) scale(1.02);
+    }
+    .cover-placeholder {
+      width: 130px;
+      height: 190px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: linear-gradient(135deg, #dfe7f3, #f8fafc);
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 0.76rem;
+    }
+
+    .book-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+    .book-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+      line-height: 1.35;
+      color: var(--text);
+    }
+    .book-author {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+    .book-tag {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(42, 99, 217, 0.08);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .book-stock {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(6, 118, 71, 0.08);
+      color: var(--success);
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .book-status {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(180, 35, 24, 0.08);
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .book-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .preview-modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+    }
+    .preview-modal[hidden] { display: none; }
+    .preview-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .preview-panel {
+      position: relative;
+      width: min(820px, calc(100vw - 28px));
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.94));
+      border-radius: 28px;
+      box-shadow: 0 30px 80px rgba(15, 23, 42, 0.45), 0 0 26px rgba(168, 85, 247, 0.18);
+      padding: 22px;
+      border: 1px solid rgba(110, 231, 183, 0.18);
+    }
+    .preview-close {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      border: 0;
+      background: rgba(255, 255, 255, 0.08);
+      color: #f8fafc;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(148, 163, 184, 0.2);
+    }
+    .preview-book {
+      display: grid;
+      grid-template-columns: minmax(180px, 240px) 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+    .preview-cover {
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(224,232,245,0.9), rgba(255,255,255,0.25));
+      border-radius: 22px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 18px;
+    }
+    .preview-cover img {
+      width: 180px;
+      height: 260px;
+      object-fit: cover;
+      border-radius: 18px;
+      box-shadow: 0 25px 28px rgba(15, 23, 42, 0.18);
+    }
+    .preview-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      color: #e2e8f0;
+    }
+    .preview-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .preview-content .book-title {
+      color: #f8fafc;
+      font-size: 1.8rem;
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 18px rgba(168, 85, 247, 0.28);
+    }
+    .preview-content .book-author {
+      color: #cbd5e1;
+      font-size: 1.02rem;
+      letter-spacing: 0.02em;
+    }
+    .meta-item {
+      background: rgba(148, 163, 184, 0.08);
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .meta-language {
+      background: linear-gradient(135deg, rgba(72, 219, 251, 0.16), rgba(165, 94, 234, 0.12));
+      border-color: rgba(72, 219, 251, 0.35);
+    }
+    .meta-year {
+      background: linear-gradient(135deg, rgba(254, 202, 87, 0.18), rgba(255, 111, 145, 0.12));
+      border-color: rgba(254, 202, 87, 0.35);
+    }
+    .meta-status {
+      background: linear-gradient(135deg, rgba(29, 209, 161, 0.15), rgba(42, 99, 217, 0.12));
+      border-color: rgba(29, 209, 161, 0.35);
+    }
+    .meta-synopsis {
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 159, 243, 0.12));
+      border-color: rgba(255, 107, 107, 0.22);
+    }
+    .meta-label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .meta-value {
+      font-weight: 800;
+      color: var(--text);
+    }
+    .meta-language .meta-value {
+      color: #67e8f9;
+      text-shadow: 0 0 12px rgba(103, 232, 249, 0.3);
+    }
+    .meta-year .meta-value {
+      color: #fbbf24;
+      text-shadow: 0 0 12px rgba(251, 191, 36, 0.28);
+    }
+    .meta-status .meta-value {
+      color: #34d399;
+      text-shadow: 0 0 12px rgba(52, 211, 153, 0.28);
+    }
+    #previewSynopsis.meta-value {
+      color: #f9a8d4;
+      text-shadow: 0 0 12px rgba(249, 168, 212, 0.2);
+    }
+    #previewPdfLink {
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      border: none;
+      box-shadow: 0 12px 24px rgba(168, 85, 247, 0.35);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .message {
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
     .message.success { border-color: var(--success); color: var(--success); }
     .message.error   { border-color: var(--danger);  color: var(--danger); }
     .message.warning { border-color: var(--warning); color: var(--warning); }
 
-    /* Formulários */
-    input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px;
-                              background: var(--card); color: var(--text); }
+    input, select, textarea {
+      font: inherit;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text);
+    }
     .form-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
     .form-grid label { display: block; font-weight: 600; margin-bottom: 4px; }
     .form-grid input, .form-grid select { width: 100%; }
@@ -94,15 +420,17 @@
       {# "user" está disponível em todos os templates: é o usuário da requisição #}
       {% if user.is_authenticated %}
         <a href="{% url 'catalog:my_loans' %}">Meus empréstimos</a>
-        {# Links que só a equipe (is_staff) enxerga #}
+        <a href="{% url 'catalog:advanced_search' %}">Busca avançada</a>
+        <a href="{% url 'catalog:search_history' %}">Histórico</a>
         {% if user.is_staff %}
+          <a href="{% url 'catalog:overdue_loans' %}">Atrasados</a>
           <a href="{% url 'admin:index' %}">Admin</a>
         {% endif %}
       {% endif %}
       <span class="spacer"></span>
       <button id="theme-toggle" class="btn" type="button">Tema escuro</button>
       {% if user.is_authenticated %}
-        <span class="user">Olá, {{ user.username }}</span>
+        <span class="user">Olá, {{ user.first_name|default:user.username }}</span>
         {# Sair altera a sessão, por isso é um formulário POST (e não um link) #}
         <form class="inline" method="post" action="{% url 'logout' %}">
           {% csrf_token %}
