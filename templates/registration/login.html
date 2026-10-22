@@ -18,5 +18,12 @@
       <input type="hidden" name="next" value="{{ next }}">
       <button class="btn btn-primary" type="submit">Entrar</button>
     </form>
+
+    {# Links para recuperar a senha e para criar uma conta nova #}
+    <div class="actions">
+      <a href="{% url 'password_reset' %}">Esqueci minha senha</a>
+      <span class="spacer"></span>
+      <a class="btn" href="{% url 'catalog:signup' %}">Criar conta</a>
+    </div>
   </div>
 {% endblock %}

@@ -127,3 +127,6 @@ LOGOUT_REDIRECT_URL = 'login'  # para onde vai depois de sair
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# E-mail: em desenvolvimento, as mensagens aparecem no terminal em vez de serem enviadas
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Biblioteca <nao-responda@biblioteca.local>'  # remetente dos e-mails

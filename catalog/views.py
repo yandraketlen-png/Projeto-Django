@@ -4,16 +4,18 @@ from datetime import timedelta
 from functools import wraps
 
 from django.contrib import messages
+from django.contrib.auth import login  # faz o login de um usuário pelo código
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Count, F, Q
+from django.db.models import Avg, Count, F, Q  # ferramentas para montar consultas (Avg = média)
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import Book, Category, Loan, SearchQuery
+from .forms import ReviewForm, SignUpForm
+from .models import Book, Category, Loan, Review, SearchQuery
 
 LOAN_DAYS = 14
 BOOKS_PER_PAGE = 10
@@ -262,3 +264,93 @@ def staff_mark_returned(request, loan_id):
         loan.mark_returned()
         messages.success(request, f"Devolução de “{loan.book.title}” ({loan.user}) registrada.")
     return redirect("catalog:overdue_loans")
+# ---------- Contas de usuário ----------
+
+
+def signup(request):
+    """Cadastro de novos leitores. Depois de criar a conta, a pessoa já entra no sistema."""
+    # Quem já está logado não precisa se cadastrar
+    if request.user.is_authenticated:
+        return redirect("catalog:book_list")
+
+    if request.method == "POST":
+        # A pessoa enviou o formulário: preenchemos com os dados recebidos
+        form = SignUpForm(request.POST)
+        if form.is_valid():  # roda todas as validações (senha forte, e-mail único...)
+            user = form.save()  # cria o usuário, com a senha criptografada
+            login(request, user)  # já deixa a pessoa logada
+            messages.success(request, f"Bem-vindo(a), {user.username}! Sua conta foi criada.")
+            return redirect("catalog:book_list")
+        # Se for inválido, segue para o render abaixo com o form cheio de mensagens de erro
+    else:
+        # A pessoa só abriu a página: formulário vazio
+        form = SignUpForm()
+
+    return render(request, "registration/signup.html", {"form": form})
+# ---------- Detalhes do livro e avaliações ----------
+
+
+@login_required
+def book_detail(request, book_id):
+    """Página de um livro: dados, média das notas e todas as avaliações."""
+    # get_object_or_404 também aceita uma consulta; aqui ela já traz a categoria junto
+    book = get_object_or_404(Book.objects.select_related("category"), pk=book_id)
+    reviews = book.reviews.select_related("user")  # avaliações do livro, com o autor de cada uma
+    # aggregate devolve um dicionário, ex.: {"average": 4.5, "total": 2}
+    stats = reviews.aggregate(average=Avg("rating"), total=Count("id"))
+
+    context = {
+        "book": book,
+        "reviews": reviews,
+        "stats": stats,
+        # first() devolve a avaliação da pessoa ou None, sem dar erro
+        "user_review": reviews.filter(user=request.user).first(),
+        "can_review": book.was_borrowed_by(request.user),
+    }
+    return render(request, "catalog/book_detail.html", context)
+
+
+@login_required
+def review_book(request, book_id):
+    """Cria OU edita a avaliação do usuário para um livro."""
+    book = get_object_or_404(Book, pk=book_id)
+
+    # Regra: só avalia quem já pegou o livro emprestado (vale para GET e para POST)
+    if not book.was_borrowed_by(request.user):
+        messages.error(request, "Só quem já pegou este livro emprestado pode avaliá-lo.")
+        return redirect("catalog:book_detail", book_id=book.id)
+
+    # Se a pessoa já avaliou, editamos a avaliação existente; se não, review fica None e criamos uma nova
+    review = Review.objects.filter(book=book, user=request.user).first()
+
+    if request.method == "POST":
+        # instance=review: com uma avaliação existente o save() atualiza; com None, cria
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            review = form.save(commit=False)  # monta o objeto sem gravar: faltam livro e usuário
+            review.book = book
+            review.user = request.user
+            review.save()  # agora sim grava no banco
+            messages.success(request, "Avaliação salva. Obrigado pela opinião!")
+            return redirect("catalog:book_detail", book_id=book.id)
+    else:
+        # GET: formulário vazio ou preenchido com a avaliação atual
+        form = ReviewForm(instance=review)
+
+    return render(request, "catalog/review_form.html", {"form": form, "book": book, "editing": review is not None})
+
+
+@login_required
+def delete_review(request, review_id):
+    """GET mostra a confirmação; POST apaga. Só o autor pode apagar a própria avaliação."""
+    # user=request.user: a avaliação de outra pessoa "não existe" para quem pede (404)
+    review = get_object_or_404(Review, pk=review_id, user=request.user)
+
+    if request.method == "POST":
+        book_id = review.book_id  # guardamos o id antes de apagar, para saber para onde voltar
+        review.delete()
+        messages.success(request, "Avaliação removida.")
+        return redirect("catalog:book_detail", book_id=book_id)
+
+    # GET: mostra a página "Tem certeza?"
+    return render(request, "catalog/review_confirm_delete.html", {"review": review})

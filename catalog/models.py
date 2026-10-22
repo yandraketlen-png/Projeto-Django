@@ -58,6 +58,11 @@ class Book(models.Model):
         active_loans = self.loans.filter(returned_at__isnull=True).count()
         return max(self.copies_total - active_loans, 0)
 
+    def was_borrowed_by(self, user):
+        """Esta pessoa já pegou este livro emprestado alguma vez?"""
+        # exists() só pergunta ao banco se há algum registro, sem trazer os dados
+        return self.loans.filter(user=user).exists()
+
 
 class Loan(models.Model):
     """O empréstimo de um livro para um usuário. Um empréstimo nunca é apagado: ele é o histórico."""
@@ -121,3 +126,37 @@ class SearchQuery(models.Model):
 
     def as_querystring(self):
         return urlencode(self.params)
+
+
+class Review(models.Model):
+    """Nota (1 a 5 estrelas) e comentário de um leitor sobre um livro."""
+
+    # Lista de pares (valor guardado no banco, texto exibido): [(1, "★"), (2, "★★"), ...]
+    RATING_CHOICES = [(n, "★" * n) for n in range(1, 6)]
+
+    book = models.ForeignKey(
+        Book, on_delete=models.CASCADE, related_name="reviews", verbose_name="Livro"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+        verbose_name="Usuário",
+    )
+    # choices limita os valores aceitos e cria o método get_rating_display()
+    rating = models.PositiveSmallIntegerField("Nota", choices=RATING_CHOICES)
+    comment = models.TextField("Comentário", blank=True)  # opcional
+    created_at = models.DateTimeField("Criada em", auto_now_add=True)  # preenchido só na criação
+    updated_at = models.DateTimeField("Atualizada em", auto_now=True)  # atualizado a cada save()
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Avaliação"
+        verbose_name_plural = "Avaliações"
+        constraints = [
+            # Regra garantida pelo próprio banco: 1 avaliação por pessoa por livro
+            models.UniqueConstraint(fields=["book", "user"], name="uma_avaliacao_por_leitor"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} deu {self.rating} ★ para “{self.book.title}”"
